@@ -13,7 +13,7 @@ import sys
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from html import unescape
+from html import escape, unescape
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
@@ -92,9 +92,18 @@ def send_telegram(text):
     data = urllib.parse.urlencode({
         "chat_id": chat,
         "text": text,
+        "parse_mode": "HTML",
         "disable_web_page_preview": "true",
     }).encode()
     http(f"https://api.telegram.org/bot{token}/sendMessage", data=data, headers={})
+
+
+def format_message(item):
+    return (
+        f"📰 <b>{escape(item['title'])}</b>\n\n"
+        f"<i>{escape(summarize(item))}</i>\n\n"
+        f"{escape(item['link'])}"
+    )
 
 
 def show_chat_id():
@@ -123,7 +132,7 @@ def main():
     new = [i for i in items if i["link"] and i["link"] not in seen]
     print(f"{len(items)} en el feed, {len(new)} nuevas.")
     for item in reversed(new):  # de la más vieja a la más nueva
-        msg = f"📰 {item['title']}\n\n{summarize(item)}\n\n{item['link']}"
+        msg = format_message(item)
         if dry:
             print("---\n" + msg)
             continue
