@@ -10,6 +10,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -33,10 +34,16 @@ def load_env():
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
-def http(url, data=None, headers=None, timeout=30):
-    req = urllib.request.Request(url, data=data, headers=headers or UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf-8", "replace")
+def http(url, data=None, headers=None, timeout=45, retries=3):
+    for attempt in range(retries):
+        req = urllib.request.Request(url, data=data, headers=headers or UA)
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode("utf-8", "replace")
+        except OSError:
+            if attempt == retries - 1:
+                raise
+            time.sleep(3)
 
 
 def strip_html(html):
